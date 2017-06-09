@@ -359,8 +359,13 @@
   _.delay = function(func, wait) {
     //delete(arguments[0]);
     //delete(arguments[1]);
-    //setTimeout(func(arguments[2], arguments[3]), wait);
-    setTimeout(func, wait);
+    //setTimeout(function(arguments[2], arguments[3]){return 0;}, wait);
+    //setTimeout(func, wait);
+    //function() { myFunc('one', 'two', 'three'); }, 1000
+    //setTimeout(function() { func(1, 2); }, wait);
+    const a = arguments[2];
+    const b = arguments[3];
+    setTimeout(function() { func(a, b); }, wait);
   };
 
 
@@ -375,7 +380,16 @@
   // input array. For a tip on how to make a copy of an array, see:
   // http://mdn.io/Array.prototype.slice
   _.shuffle = function(array) {
-
+    const result = [];
+    let randomIndex = 0;
+    const arrayCopy = array.slice(0);
+    let num = 0;
+    while (arrayCopy.length>0){
+      randomIndex = Math.floor(Math.random()*arrayCopy.length);
+			num = arrayCopy.splice(randomIndex,1);
+			result.push(num[0]);
+    }
+    return result;
   };
 
 
