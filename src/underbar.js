@@ -157,7 +157,7 @@
   //   }); // should be 5, regardless of the iterator function passed in
   //          No accumulator is given so the first element is used.
   _.reduce = function(collection, iterator, accumulator) {
-
+    /*
     if (Array.isArray(collection)){
       for (let i=0; i<collection.length; i++){
         if (accumulator === undefined){
@@ -177,7 +177,16 @@
       }
       return accumulator;
     }
+    */
 
+    // refactored
+    _.each(collection, function(element, i) {
+      if (accumulator === undefined && i === 0) {
+        accumulator = element;
+      } else {
+        accumulator = iterator(accumulator, element)
+      }
+    }); return accumulator
   };
 
   // Determine if the array or object contains a given value (using `===`).
@@ -196,19 +205,6 @@
   // Determine whether all of the elements match a truth test.
   _.every = function(collection, iterator) {
     // TIP: Try re-using reduce() here.
-    /*
-    return collection.reduce(function(acc, el){
-      if (!acc){
-        return false;
-      }
-      if (iterator(el)){
-        return true;
-      } else {
-        return false;
-      }
-
-    }, true);
-    */
     if (iterator !== undefined){
       for (let i = 0; i<collection.length; i++){
           if (!iterator(collection[i], i, collection)){
@@ -224,6 +220,10 @@
       }
       return true;
     }
+
+    // refactored
+    //return collection.reduce((acc, el) => {return iterator === undefined ? (!el || !acc?false:acc):(!iterator(el) || !acc?false:acc);}, true);
+
   };
 
   // Determine whether any of the elements pass a truth test. If no iterator is
@@ -404,6 +404,17 @@
   // Calls the method named by functionOrKey on each value in the list.
   // Note: You will need to learn a bit about .apply to complete this.
   _.invoke = function(collection, functionOrKey, args) {
+    var arr = []
+    if (typeof(functionOrKey) === 'string' ){
+      for (let i=0; i<collection.length; i++){
+        arr.push(collection[i][functionOrKey]());
+      }
+    } else {
+      for (let i=0; i<collection.length; i++){
+        arr.push(functionOrKey.apply(collection[i]));
+      }
+    }
+    return arr;
   };
 
   // Sort the object's values by a criterion produced by an iterator.
@@ -411,6 +422,21 @@
   // of that string. For example, _.sortBy(people, 'name') should sort
   // an array of people by their name.
   _.sortBy = function(collection, iterator) {
+    var sortedCollec = [];
+    if (typeof(iterator) === 'string'){
+      // implement a sort function using collection[iterator]
+      sortedCollec = collection.sort(function(el1, el2){
+        if (el1[iterator]>el2[iterator]) return 1;
+      	else if (el2[iterator]>el1[iterator]) return -1;
+      	else return 0;})
+    } else {
+      sortedCollec = collection.sort(function(el1, el2){
+        if (iterator(el1)>iterator(el2)) return 1;
+      	else if (iterator(el2)>iterator(el1)) return -1;
+      	else return 0;})
+      // implement a sort function using iterator(collection)
+    }
+    return sortedCollec;
   };
 
   // Zip together two or more arrays with elements of the same index
@@ -419,6 +445,27 @@
   // Example:
   // _.zip(['a','b','c','d'], [1,2,3]) returns [['a',1], ['b',2], ['c',3], ['d',undefined]]
   _.zip = function() {
+
+    var result = [];
+    var tempArr = [];
+    var indexLongest = 0;
+
+    // find longest element
+    for (let i=1; i<arguments.length; i++){
+      if (arguments[i]>arguments[indexLongest]){
+        indexLongest = i;
+      }
+    }
+
+    for (let i=0; i<=indexLongest; i++){
+      tempArr = [];
+      for (let y=0; y<arguments.length; y++){
+        tempArr.push(arguments[y][i])
+      }
+      result.push(tempArr);
+    }
+
+    return result;
   };
 
   // Takes a multidimensional array and converts it to a one-dimensional array.
@@ -426,16 +473,57 @@
   //
   // Hint: Use Array.isArray to check if something is an array
   _.flatten = function(nestedArray, result) {
+    var result = [];
+
+    // recursive function
+    var findEl = function(el){
+      if (!Array.isArray(el)){
+        result.push(el);
+        return result;
+      }
+      else {
+        for (let subEl of el){
+          findEl(subEl);
+        }
+      }
+    };
+
+    // call of the recursive function for each element
+    for (let el of nestedArray){
+      findEl(el);
+    }
+    return result;
   };
 
   // Takes an arbitrary number of arrays and produces an array that contains
   // every item shared between all the passed-in arrays.
+  function intersectionBy(arr1, arr2){
+    const arr2Set = new Set(arr2);
+    return _.filter(arr1, function(el){return arr2Set.has(el);});
+    //return arr1.filter(el => arr2Set.has(el));
+  }
+
   _.intersection = function() {
+    var result = arguments[0];
+    for (var i=1; i<arguments.length; i++){
+    	result = intersectionBy(result, arguments[i]);
+    }
+    return result;
   };
 
   // Take the difference between one array and a number of other arrays.
   // Only the elements present in just the first array will remain.
+  function notIntersectionBy(arr1, arr2){
+    const arr2Set = new Set(arr2);
+    return _.filter(arr1, function(el){return !arr2Set.has(el);});
+    //return arr1.filter(el => arr2Set.has(el));
+  }
+
   _.difference = function(array) {
+    for (var i=1; i<arguments.length; i++){
+    	array = notIntersectionBy(array, arguments[i]);
+    }
+    return array;
   };
 
   // Returns a function, that, when invoked, will only be triggered at most once
@@ -444,5 +532,17 @@
   //
   // Note: This is difficult! It may take a while to implement.
   _.throttle = function(func, wait) {
+    var triggeredAt = new Date(0);
+    console.log('throttle call');
+    return function(){
+      var now = new Date();
+      console.log('anonymous func call at:' + (now-triggeredAt));
+      if( now - triggeredAt > wait ){
+        console.log('return func and reset last call trigger');
+        triggeredAt = now;
+        return func();
+      }
+    };
   };
+
 }());
